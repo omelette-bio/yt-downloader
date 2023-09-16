@@ -10,12 +10,14 @@ parser.add_argument('-p', '--playlist', action='store_true', help='Download a pl
 
 args = parser.parse_args()
 
-if args.output[-1] == '/':
-  output_type = 'directory'
-  makedirs(args.output, exist_ok=True)
+if args.output is not None:
+  if args.output[-1] == '/':
+    output_type = 'directory'
+    makedirs(args.output, exist_ok=True)
+  else:
+    output_type = 'file'
 else:
-  output_type = 'file'
-
+  output_type = None
 
 if args.output is not None:
   if args.playlist == False:
@@ -36,15 +38,7 @@ def progress_bar(stream, chunk, bytes_remaining):
 
   print('\r' + '[Download progress]:[%s%s]%.2f%%;' % ('█' * int(size*20/contentSize), ' '*(20-int(size*20/contentSize)), float(size/contentSize*100)), end='')
 
-
-chunk_size = 1
-if args.playlist == False:
-  print(f"fetching : {args.url}")
-  video = YouTube(args.url)
-  print(f"downloading : {video.title}")
-
-  video.register_on_progress_callback(progress_bar)
-
+def download(video, format):
   match args.format:
     case 'mp3':
       audio = video.streams.get_audio_only()
@@ -55,19 +49,31 @@ if args.playlist == False:
     case _:
       print("error : format not supported")
       sys.exit(1)
+  return video_title
 
-
-  match args.output:
+def fileFolderOutput(video_title, output, output_type, format):
+  match output:
     case None:
-      base, ext = path.splitext(video_title)
-      new_video_title = base + '.' + args.format
+      base, _ = path.splitext(video_title)
+      new_video_title = base + '.' + format
     case _:
       if output_type == 'directory':
-        new_video_title = args.output + path.splitext(video.title)[0] + '.' + args.format
+        new_video_title = args.output + path.splitext(video.title)[0] + '.' + format
       else:
         new_video_title = args.output
-      
+  
+  return new_video_title
 
+chunk_size = 1
+if args.playlist == False:
+  print(f"fetching : {args.url}")
+  video = YouTube(args.url)
+  print(f"downloading : {video.title}")
+
+  video.register_on_progress_callback(progress_bar)
+
+  video_title = download(video, args.format)
+  new_video_title = fileFolderOutput(video_title, args.output, output_type, args.format)
   rename(video_title, new_video_title)
 
 else:
@@ -80,24 +86,10 @@ else:
     print(f"downloading : {video.title}")
     video.register_on_progress_callback(progress_bar)
     
-    match args.format:
-      case 'mp3':
-        audio = video.streams.get_audio_only()
-        video_title = audio.download()
-      case 'mp4':
-        video = video.streams.get_highest_resolution()
-        video_title = video.download()
-      case _:
-        print("error : format not supported")
-        sys.exit(1)
-    
-    match args.output:
-      case None:
-        base, ext = path.splitext(video_title)
-        new_video_title = base + '.' + args.format
-      case _:
-        new_video_title = args.output + path.splitext(video.title)[0] + '.' + args.format
-    
+    video_title = download(video, args.format)
+    new_video_title = fileFolderOutput(video_title, args.output, output_type, args.format)
     rename(video_title, new_video_title)
+    
+    print('\n')
   
 sys.exit(0)
