@@ -1,8 +1,6 @@
 from pytube import YouTube, Playlist
-from os import path, rename
-import argparse
-import sys
-import os
+from os import path, rename, makedirs
+import argparse, sys
 
 parser = argparse.ArgumentParser(description='Download YouTube videos')
 parser.add_argument('format', metavar='FORMAT', type=str, help='Download format, can be mp3 or mp4')
@@ -14,7 +12,7 @@ args = parser.parse_args()
 
 if args.output[-1] == '/':
   output_type = 'directory'
-  os.makedirs(args.output, exist_ok=True)
+  makedirs(args.output, exist_ok=True)
 else:
   output_type = 'file'
 
@@ -64,7 +62,10 @@ if args.playlist == False:
       base, ext = path.splitext(video_title)
       new_video_title = base + '.' + args.format
     case _:
-      new_video_title = args.output
+      if output_type == 'directory':
+        new_video_title = args.output + path.splitext(video.title)[0] + '.' + args.format
+      else:
+        new_video_title = args.output
       
 
   rename(video_title, new_video_title)
