@@ -39,7 +39,7 @@ def progress_bar(stream, chunk, bytes_remaining):
   print('\r' + '[Download progress]:[%s%s]%.2f%%;' % ('█' * int(size*20/contentSize), ' '*(20-int(size*20/contentSize)), float(size/contentSize*100)), end='')
 
 def download(video, format):
-  match args.format:
+  match format:
     case 'mp3':
       audio = video.streams.get_audio_only()
       video_title = audio.download()
